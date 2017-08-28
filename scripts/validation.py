@@ -1,4 +1,4 @@
-from bets_project.Objects import Sport, CompetitionSeason, Competition
+from bets_project.Objects import Sport, CompetitionSeason, Competition, Team, Match, MatchResult
 from bets_project.ObjectsManager import ObjectsManager
 
 
@@ -10,7 +10,7 @@ def test_objects_consistency():
     football_bis = Sport('Football')
     manager.push(football)
 
-    # #competition creation
+    #competition creation
     ligue_1 = Competition("Ligue 1", football)
     ligue_1_bis = Competition("Ligue 1", football_bis)
     ligue_2 = Competition("Ligue 2", football)
@@ -26,10 +26,33 @@ def test_objects_consistency():
     # #competition_season creation
     season_2016_2017 = CompetitionSeason("2016-2017", ligue_1)
     manager.push(season_2016_2017)
-    manager.push(season_2016_2017)
+    # manager.push(season_2016_2017)
+
+    paris = Team('Paris Saint Germain')
+    nantes = Team('FC Nantes')
+
+
 
     # print(manager.cache[season_2016_2017.__class__])
     # print(len(manager.cache[season_2016_2017.__class__]))
+
+
+def test2():
+    manager = ObjectsManager()
+
+    #sports creation
+    football = Sport('Football')
+    manager.push(football)
+
+    # #competition creation
+    ligue_1 = Competition("Ligue 1", football)
+    manager.push(ligue_1)
+
+    # #competition_season creation
+    season_2016_2017 = CompetitionSeason("2016-2017", ligue_1)
+    manager.push(season_2016_2017)
+
+
 
 
 def main():
