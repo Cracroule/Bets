@@ -81,7 +81,7 @@ class ObjectsManager(object):
                            ('William Hill', 'WH'),
                            ('BetBrain average', 'BbAv'), ]
 
-        self.push((Bookmaker(e[0], e[1]) for e in bookmakers_list))
+        self.push((Bookmaker(label=e[1], full_name=e[0]) for e in bookmakers_list))
         # for bkm in bookmakers_list:
         #     bookmaker = Bookmaker(name=bkm[0], label=bkm[1])
         #     self.push(bookmaker)
@@ -112,14 +112,18 @@ class ObjectsManager(object):
 
         # save odds
         # all_bkmk = ['BbAv'] # not interested by other ones for now
-        all_bkmk = (bkm for bkm in self.get_all(Bookmaker) if bkm.label == 'BbAv')
-        # all_bkmk = list(self.get_all(Bookmaker))
+        # all_bkmk = (bkm for bkm in self.get_all(Bookmaker) if bkm.label == 'BbAv')
+        all_bkmk = list(self.get_all(Bookmaker))
         for bkmk in all_bkmk:
             odd_labels = [bkmk.label + end_label for end_label in ('H', 'D', 'A')]
             for odd_label in odd_labels:
                 if odd_label in input_dict.keys():
+                    try:
+                        booky_quote = float(input_dict[odd_label])
+                    except:
+                        continue
                     event = Event(odd_label[-1])
-                    event_odds = EventOdds(bkmk, match, event, value=float(input_dict[odd_label]))
+                    event_odds = EventOdds(bkmk, match, event, value=booky_quote)
                     self.push(event_odds)
 
     def register_full_season_matches_from_csv(self, competition_season, file):

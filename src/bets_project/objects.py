@@ -120,20 +120,22 @@ class Team(BetObject):
 
 class Bookmaker(BetObject):
 
-    def __init__(self, name, label):
-        self.name = name
+    def __init__(self, label, full_name=None):
         self.label = label
+        self.full_name = full_name
 
     def __str__(self):
-        return self.name
+        if self.full_name:
+            return '%s %s' % (self.label, self.full_name)
+        return self.label
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
-            return self.name == other.name and self.label == other.label
+            return self.label == other.label
         return NotImplemented
 
     def __hash__(self):
-        return hash((self.name, self.label))
+        return hash(self.label)
 
 
 class Event(BetObject):
