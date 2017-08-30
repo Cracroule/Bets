@@ -88,7 +88,6 @@ class MatchResult(BetObject):
         self.home_goals = home_goals
         self.away_goals = away_goals
 
-
     def __str__(self):
         return '%s: %d - %d' % (str(self.match), int(self.home_goals), int(self.away_goals))
 

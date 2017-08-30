@@ -1,4 +1,4 @@
-from bets_project.Objects import Sport, Competition, CompetitionSeason, EventOdds, Event, \
+from bets_project.objects import Sport, Competition, CompetitionSeason, EventOdds, Event, \
     Team, Match, MatchResult, Bookmaker, BetObject
 import inspect
 import datetime
@@ -119,14 +119,10 @@ class ObjectsManager(object):
             for odd_label in odd_labels:
                 if odd_label in input_dict.keys():
                     event = Event(odd_label[-1])
-                    event_odds = EventOdds(bkmk, match, event, value=input_dict[odd_label])
+                    event_odds = EventOdds(bkmk, match, event, value=float(input_dict[odd_label]))
                     self.push(event_odds)
 
     def register_full_season_matches_from_csv(self, competition_season, file):
-        # data_dir = 'data/'
-        # competition_label = competition.name.low().replace(' ', '').replace('_', '')
-        # season_label = season_tag.replace('/', '_').replace('-', '_')
-        # file = data_dir + competition_label + season_label + '.csv'
         with open(file) as csvfile:
             reader = csv.DictReader(csvfile)
             for row_dict in reader:
