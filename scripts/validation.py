@@ -11,7 +11,7 @@ from bets_project.bookmakersquotes import proba_to_quote, quote_to_proba, get_be
 # from bets_project.ma
 
 from math import sqrt
-import datetime
+import datetime, time
 
 
 def validate_objects_consistency():
@@ -148,8 +148,8 @@ def test_strategy():
         manager.register_full_season_matches_from_csv(compet_season, file)
 
     # let s focus on 1rst game of ligue1
-    d_start = datetime.datetime.strptime("06-08-2015", '%d-%m-%Y').date()
-    d_end = datetime.datetime.strptime("18-06-2016", '%d-%m-%Y').date()
+    d_start = datetime.datetime.strptime("06-08-2013", '%d-%m-%Y').date()
+    d_end = datetime.datetime.strptime("18-06-2014", '%d-%m-%Y').date()
 
     sigma = 1.2
     home_goal_diff_advantage = 0.25
@@ -165,10 +165,16 @@ def test_strategy():
     investment_gain_threshold = 0.05
     fct_of_gain = sqrt
     investment_strategy = GenericGainInvestStrategy(investment_gain_threshold, fct_of_gain)
-    backtest(manager, d_start, d_end, match_outcome_analyser, investment_strategy, favorite_bookmaker=Bookmaker('BbAv'))
+    # backtest(manager, d_start, d_end, match_outcome_analyser, investment_strategy, observed_team_name="Paris SG")
+    # backtest(manager, d_start, d_end, match_outcome_analyser, investment_strategy, favorite_bookmaker=Bookmaker('BbAv'),
+    #          observed_team="Paris SG")
+    backtest(manager, d_start, d_end, match_outcome_analyser, investment_strategy)
+    # backtest(manager, d_start, d_end, match_outcome_analyser, investment_strategy, favorite_bookmaker=Bookmaker('BbAv'))
 
 
 def main():
+    tps1 = time.clock()
+
     validate_objects_consistency()
     validate_manager_init()
     validate_load_season_matches()
@@ -176,9 +182,11 @@ def main():
     validate_normal_diff_model()
     validate_poisson_goals_model()
 
-
     test_strategy()
-    print('all is fine')
+
+    tps2 = time.clock()
+
+    print(' all is fine', '(execution time is', tps2 - tps1, ')')
 
 
 if __name__ == '__main__':

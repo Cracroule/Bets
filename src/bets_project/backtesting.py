@@ -7,10 +7,42 @@ from bets_project.investmentstrategy import DummyAwayInvestStrategy, DummyDrawIn
     GenericGainInvestStrategy
 from bets_project.bookmakersquotes import get_best_quote, proba_to_quote, quote_to_proba
 from bets_project.matchoutcomesmodel import GoalsPoissonDistrib, DiffGoalNormalDistrib
+from bets_project.resultsanalysis import BasicGenericAnalysis
+
+
+def get_relative_results_history(match, iterable_results, nb_max_results=None, max_days=None):
+    home_team_results, away_team_results = list(), list()
+    match_result = None
+    for result in iterable_results:
+
+        if result.match == match:
+            match_result = result
+            continue
+
+        if result.match == match or result.match.date > match.date:
+            continue
+
+        if max_days:
+            time_to_result = match.date - result.match.date
+            if time_to_result.days > max_days:
+                continue
+
+        if result.match.home_team == match.home_team or result.match.away_team == match.home_team:
+            home_team_results.append(result)
+        if result.match.home_team == match.away_team or result.match.away_team == match.away_team:
+            away_team_results.append(result)
+
+    if nb_max_results and len(home_team_results) > nb_max_results:
+        home_team_results = home_team_results[len(home_team_results) - nb_max_results:]
+    if nb_max_results and len(away_team_results) > nb_max_results:
+        away_team_results = away_team_results[len(away_team_results) - nb_max_results:]
+
+    return home_team_results, away_team_results, match_result
 
 
 # TODO: make code more generic
-def backtest(manager, d_start, d_end, match_outcome_analyser, investment_strategy, favorite_bookmaker=None):
+def backtest(manager, d_start, d_end, match_outcome_analyser, investment_strategy, favorite_bookmaker=None,
+             observed_team_name=None):
 
     all_matches = list(manager.get_all(Match))
     all_matches_within_bet_range = [m for m in all_matches if d_start <= m.date <= d_end]
@@ -30,27 +62,16 @@ def backtest(manager, d_start, d_end, match_outcome_analyser, investment_strateg
     total_gain = 0.
     total_bet_amount = 0.
     for match in all_matches_within_bet_range:
-        # if not (match.home_team.name == "Toulouse" and match.away_team.name == "St Etienne"):
-        #     continue
+        if observed_team_name and match.home_team.name != observed_team_name and match.away_team.name != observed_team_name:
+            continue
         best_booky_quotes = get_best_quote(match, all_relevant_quotes)
-        home_team_results, away_team_results = list(),  list()
-        for result in all_results_before_end:
-            match_result = None
-            # assumes all_results_before_end is sorted by date
-            if result.match == match:
-                match_result = result
-                break
-            if result.match.date > match.date:
-                break
-            if result.match.home_team == match.home_team or result.match.away_team == match.home_team:
-                home_team_results.append(result)
-            if result.match.home_team == match.away_team or result.match.away_team == match.away_team:
-                away_team_results.append(result)
+        home_team_results, away_team_results, match_result = get_relative_results_history(match, all_results_before_end)
 
         prob_match_issues = match_outcome_analyser.analyse(match, home_team_results, away_team_results)
-        # bet_amounts = get_investment_strategy(prob_match_issues, best_booky_quotes)
         bet_amounts = investment_strategy.get_investment_amounts(prob_match_issues, best_booky_quotes)
-        my_bet_quotes = [round(1./p, 3) for p in prob_match_issues]
+
+        # bet_amounts = quote_to_proba(best_booky_quotes)
+        # bet_amounts = [0, 1, 0]
 
         # tests, to be deleted
         booky_probas = quote_to_proba(best_booky_quotes)
@@ -64,7 +85,6 @@ def backtest(manager, d_start, d_end, match_outcome_analyser, investment_strateg
             victory_boolean = [diff > 0, diff == 0, diff < 0]
             for i in range(3):
                 match_gain += bet_amounts[i] * best_booky_quotes[i] * victory_boolean[i]
-            # print(match_result, bet_amounts, match_gain, best_booky_quotes, my_bet_quotes)
             print(match_result, best_booky_quotes, ' -->', display[1:])
         else:
             print(match, bet_amounts)
@@ -74,10 +94,7 @@ def backtest(manager, d_start, d_end, match_outcome_analyser, investment_strateg
 
     print("total gain:", total_gain)
     print("total bet amount:", total_bet_amount)
-
-
-
-
+    print("ratio:", round(total_gain / total_bet_amount, 4))
 
 
 

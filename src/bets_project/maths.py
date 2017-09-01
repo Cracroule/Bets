@@ -47,6 +47,14 @@ def solver(f, x_min, x_max, eps):
         return c
 
 
+def time_series_stats(time_series):
+    ts_sum = sum(time_series)
+    ts_square_sum = sum([t*t for t in time_series])
+    avg = ts_sum / len(time_series)
+    sigma = ts_square_sum / len(time_series) - avg * avg
+    return avg, sigma
+
+
 class ExponentialWeight(object):
 
     def __init__(self, discount_rate, day_count_base=None):
