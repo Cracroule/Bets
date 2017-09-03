@@ -139,5 +139,6 @@ class PoissonLikelihoodParamEstimation(object):
             new_teams_params[team]["beta"] = convergence_ratio * new_teams_params[team]["beta"] * norm_beta +\
                                              (1 - convergence_ratio) * teams_params[team]["beta"]
 
+
         return new_teams_params
 
