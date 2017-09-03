@@ -57,8 +57,7 @@ class PoissonLikelihoodParamEstimation(object):
         results_by_team, all_observed_results = self.prepare_results(date, results_list)
         teams_params, home_adv_param = self.init_params(date, results_by_team, all_observed_results, results_weighting)
 
-    @staticmethod
-    def init_params(date, results_by_team, all_results, results_weighting):
+    def init_params(self, date, results_by_team, all_results, results_weighting):
         teams_params = dict()
         home_adv_param = dict()
 
@@ -71,7 +70,8 @@ class PoissonLikelihoodParamEstimation(object):
 
         # init param values to alpha=1 and beta =1
         for team in results_by_team.keys():
-            teams_params[team] = {'alpha': 1., 'beta': 1., 'total_weighted_scored':0., 'total_weighted_conceded':0.}
+            teams_params[team] = {'alpha': 1., 'beta': 1., 'total_weighted_scored':0., 'total_weighted_conceded':0.,
+                                  'nb_obs':0, 'sum_weight': 0.}
 
         # compute weighted scored and conceded goals
         for team, team_results in results_by_team.items():
@@ -81,10 +81,21 @@ class PoissonLikelihoodParamEstimation(object):
                 conceded = r.home_goals if r.away_team == team else r.away_goals
                 teams_params[team]['total_weighted_scored'] += weight * scored
                 teams_params[team]['total_weighted_conceded'] += weight * conceded
+                teams_params[team]['nb_obs'] += 1.
+                teams_params[team]['sum_weight'] += weight
+
+        max_sum_weight = max([teams_params[t]['sum_weight'] for t in results_by_team.keys()])
+        for team in results_by_team.keys():
+            if teams_params[team]['nb_obs'] < self.nb_observed_matches:
+                teams_params[team]['lack_weights'] = max(max_sum_weight - teams_params[team]['sum_weight'], 0.)
+                teams_params[team]['lack_scored'] = teams_params[team]['lack_weights'] * self.default_scored_goals
+                teams_params[team]['lack_conceded'] = teams_params[team]['lack_weights'] * self.default_conceded_goals
 
         return teams_params, home_adv_param
 
-    def param_local_optimum(self, date, results_by_team, all_results, teams_params, home_adv_param, results_weighting, r):
+    @staticmethod
+    def param_local_optimum(date, results_by_team, all_results, teams_params, home_adv_param, results_weighting,
+                            convergence_ratio):
         new_teams_params = dict(teams_params)
 
         for team in results_by_team.keys():
@@ -100,4 +111,33 @@ class PoissonLikelihoodParamEstimation(object):
                 new_teams_params[team]['alpha_tmp'] += weight * teams_params[other_team]['alpha'] * gamma_atk
                 new_teams_params[team]['beta_tmp'] += weight * teams_params[other_team]['beta'] * gamma_def
 
+        for r in all_results:
+            weight = results_weighting.weight(date, r.match.date)
+            home_adv_param["gamma_tmp"] += weight * teams_params[r.match.home_team]['alpha'] * \
+                                           teams_params[r.match.away_team]['alpha']
+
+        # adjustments with missing matches
+        for team in results_by_team.keys():
+            sum_scored = teams_params[team]['total_weighted_scored'] + teams_params[team]['lack_scored']
+            sum_def = new_teams_params[team]['beta_tmp'] + teams_params[team]['lack_weights']
+
+            sum_conceded = teams_params[team]['total_weighted_conceded'] + teams_params[team]['lack_conceded']
+            sum_atk = new_teams_params[team]['alpha_tmp'] + teams_params[team]['lack_weights']
+
+            new_teams_params[team]["alpha"] = sum_scored / sum_def
+            new_teams_params[team]["beta"] = sum_conceded / sum_atk
+
+        # normalisation
+        nb_teams = len(teams_params)
+        norm_alpha = nb_teams / sum([new_teams_params[t]["alpha"] for t in new_teams_params.keys()])
+        norm_beta = nb_teams / sum([new_teams_params[t]["beta"] for t in new_teams_params.keys()])
+
+        # final values
+        for team in new_teams_params.keys():
+            new_teams_params[team]["alpha"] = convergence_ratio * new_teams_params[team]["alpha"] * norm_alpha +\
+                                              (1 - convergence_ratio) * teams_params[team]["alpha"]
+            new_teams_params[team]["beta"] = convergence_ratio * new_teams_params[team]["beta"] * norm_beta +\
+                                             (1 - convergence_ratio) * teams_params[team]["beta"]
+
+        return new_teams_params
 
