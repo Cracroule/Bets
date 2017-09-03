@@ -32,6 +32,9 @@ def get_relative_results_history(match, iterable_results, nb_max_results=None, m
         if result.match.home_team == match.away_team or result.match.away_team == match.away_team:
             away_team_results.append(result)
 
+    home_team_results.sort(key=lambda r: r.match.date)
+    away_team_results.sort(key=lambda r: r.match.date)
+
     if nb_max_results and len(home_team_results) > nb_max_results:
         home_team_results = home_team_results[len(home_team_results) - nb_max_results:]
     if nb_max_results and len(away_team_results) > nb_max_results:
