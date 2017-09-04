@@ -8,11 +8,14 @@ from bets_project.matchoutcomesmodel import DiffGoalNormalDistrib, GoalsPoissonD
 from bets_project.backtesting import backtest
 from bets_project.maths import LinearWeight, ExponentialWeight
 from bets_project.bookmakersquotes import proba_to_quote, quote_to_proba, get_best_quote
+from bets_project.modelparamestimation import PoissonLikelihoodParamEstimation
 # from bets_project.ma
 
 from math import sqrt
 import datetime, time
 
+# DATA_DIR = "/Users/cracr/Desktop/python_projects/Bets/src/bets_project/data/"
+DATA_DIR = "/home/rpil/Desktop/perso/Bets/src/bets_project/data/"
 
 def validate_objects_consistency():
     manager = ObjectsManager()
@@ -57,12 +60,9 @@ def validate_load_season_matches():
     manager.register_odds_structure()
     ligue1_2015_2016 = CompetitionSeason("2015-2016", ligue_1)
 
-    # data_dir = 'Bets/src/bets_project/data/'
-    # data_dir = "/Users/cracr/Desktop/python_projects/Bets/src/bets_project/data/"
-    data_dir = "/home/rpil/Desktop/perso/Bets/src/bets_project/data/"
     competition_label = ligue1_2015_2016.competition.name.lower().replace(' ', '').replace('_', '')
     season_label = ligue1_2015_2016.season.replace('/', '_').replace('-', '_')
-    file = data_dir + competition_label + '_' + season_label + '.csv'
+    file = DATA_DIR + competition_label + '_' + season_label + '.csv'
     manager.register_full_season_matches_from_csv(ligue1_2015_2016, file)
 
     assert(len(manager.get_all(Match)) == 380)
@@ -74,16 +74,12 @@ def validate_load_full_matches():
     ligue_1 = manager.register_ligue_1()
     manager.register_odds_structure()
 
-    # data_dir = 'Bets/src/bets_project/data/'
-    # data_dir = "/Users/cracr/Desktop/python_projects/Bets/src/bets_project/data/"
-    data_dir = "/home/rpil/Desktop/perso/Bets/src/bets_project/data/"
-
     s_labels_to_load = ('2009-2010', '2010-2011', '2011-2012', '2012-2013', '2013-2014', '2014-2015', '2015-2016')
     all_compet_season = [CompetitionSeason(s, ligue_1) for s in s_labels_to_load]
     for compet_season in all_compet_season:
         competition_label = compet_season.competition.name.lower().replace(' ', '').replace('_', '')
         season_label = compet_season.season.replace('/', '_').replace('-', '_')
-        file = data_dir + competition_label + '_' + season_label + '.csv'
+        file = DATA_DIR + competition_label + '_' + season_label + '.csv'
         manager.register_full_season_matches_from_csv(compet_season, file)
 
     assert (len(manager.get_all(Match)) == 380 * len(s_labels_to_load))
@@ -136,15 +132,12 @@ def test_strategy():
     ligue_1 = manager.register_ligue_1()
     manager.register_odds_structure()
 
-    # data_dir = "/Users/cracr/Desktop/python_projects/Bets/src/bets_project/data/"
-    data_dir = "/home/rpil/Desktop/perso/Bets/src/bets_project/data/"
-
     s_labels_to_load = ('2009-2010', '2010-2011', '2011-2012', '2012-2013', '2013-2014', '2014-2015', '2015-2016')
     all_compet_season = [CompetitionSeason(s, ligue_1) for s in s_labels_to_load]
     for compet_season in all_compet_season:
         competition_label = compet_season.competition.name.lower().replace(' ', '').replace('_', '')
         season_label = compet_season.season.replace('/', '_').replace('-', '_')
-        file = data_dir + competition_label + '_' + season_label + '.csv'
+        file = DATA_DIR + competition_label + '_' + season_label + '.csv'
         manager.register_full_season_matches_from_csv(compet_season, file)
 
     # let s focus on 1rst game of ligue1
@@ -172,6 +165,35 @@ def test_strategy():
     # backtest(manager, d_start, d_end, match_outcome_analyser, investment_strategy, favorite_bookmaker=Bookmaker('BbAv'))
 
 
+def test_poisson_param_likelihood_estimation():
+    manager = ObjectsManager()
+    ligue_1 = manager.register_ligue_1()
+    manager.register_odds_structure()
+
+    s_labels_to_load = ('2009-2010', '2010-2011', '2011-2012', '2012-2013', '2013-2014', '2014-2015', '2015-2016')
+    all_compet_season = [CompetitionSeason(s, ligue_1) for s in s_labels_to_load]
+    for compet_season in all_compet_season:
+        competition_label = compet_season.competition.name.lower().replace(' ', '').replace('_', '')
+        season_label = compet_season.season.replace('/', '_').replace('-', '_')
+        file = DATA_DIR + competition_label + '_' + season_label + '.csv'
+        manager.register_full_season_matches_from_csv(compet_season, file)
+
+    date = datetime.datetime.strptime("06-08-2015", '%d-%m-%Y').date()
+
+    nb_observed_matches = 38 * 3
+    default_scored_goals = 0.8
+    default_conceded_goals = 1.2
+    results_weighting = ExponentialWeight(0.3)
+    max_days_in_past = 365.25 * 3 + 10
+    poisson_param_estimator = PoissonLikelihoodParamEstimation(nb_observed_matches, default_scored_goals,
+                                                               default_conceded_goals, results_weighting,
+                                                               max_days=max_days_in_past)
+    teams_param, home_adv_param = poisson_param_estimator.get_parameters(date, list(manager.get_all(MatchResult)))
+    print('home_adv', home_adv_param)
+    for t in teams_param.keys():
+        print(t.name, teams_param[t]['alpha'], teams_param[t]['beta'])
+
+
 def main():
     tps1 = time.clock()
 
@@ -182,7 +204,8 @@ def main():
     validate_normal_diff_model()
     validate_poisson_goals_model()
 
-    test_strategy()
+    # test_strategy()
+    test_poisson_param_likelihood_estimation()
 
     tps2 = time.clock()
 

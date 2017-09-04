@@ -10,6 +10,7 @@ from bets_project.matchoutcomesmodel import GoalsPoissonDistrib, DiffGoalNormalD
 from bets_project.resultsanalysis import BasicGenericAnalysis
 
 
+# TODO delete here (has been copied in ModelParamEstimation)
 def get_relative_results_history(match, iterable_results, nb_max_results=None, max_days=None):
     home_team_results, away_team_results = list(), list()
     match_result = None
