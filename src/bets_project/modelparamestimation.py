@@ -51,7 +51,7 @@ class ModelParamEstimation(object):
 class PoissonLikelihoodParamEstimation(ModelParamEstimation):
 
     def __init__(self, nb_observed_matches, default_scored_goals, default_conceded_goals, results_weighting,
-                 nb_days_validity_parameters=7, max_days=None, convergence_ratio=0.6, max_likelihood_iterations=1000,
+                 nb_days_validity_parameters=4, max_days=None, convergence_ratio=0.6, max_likelihood_iterations=1000,
                  epsilon=0.000001):
         self.nb_observed_matches = nb_observed_matches
         self.default_scored_goals = default_scored_goals
@@ -81,9 +81,20 @@ class PoissonLikelihoodParamEstimation(ModelParamEstimation):
     # else, parameters for m2 will include m1 results, and parameters for m1 will have to be computed again
     def get_match_parameters(self, match, results_list):
         teams_params, home_adv_param = self.get_parameters(match.date, results_list)
-        lambda_param = teams_params[match.home_team]['alpha'] * teams_params[match.away_team]['beta'] * \
-                       home_adv_param['gamma']
-        mu_param = teams_params[match.away_team]['alpha'] * teams_params[match.home_team]['beta']
+
+        try:
+            alpha_home, beta_home = teams_params[match.home_team]['alpha'], teams_params[match.home_team]['beta']
+        except KeyError:
+            alpha_home, beta_home = self.default_scored_goals, self.default_conceded_goals
+
+        try:
+            alpha_away, beta_away = teams_params[match.away_team]['alpha'], teams_params[match.away_team]['beta']
+        except KeyError:
+            alpha_away, beta_away = self.default_scored_goals, self.default_conceded_goals
+
+        lambda_param = alpha_home * beta_away * home_adv_param['gamma']
+        mu_param = alpha_away * beta_home
+
         return lambda_param, mu_param
 
     def _compute_params(self, date, results_list):
@@ -242,20 +253,23 @@ class PoissonLikelihoodParamEstimation(ModelParamEstimation):
 class DiffGoalHomeMadeEstimation(ModelParamEstimation):
 
     def __init__(self, diff_goal_std_uncertainty, home_goal_diff_advantage, min_expected_results, no_history_penalty,
-                 diff_goal_aggregation_multiplier, results_weighting):
+                 diff_goal_aggregation_multiplier, results_weighting, nb_max_results=None, max_days=None):
         self.sigma = diff_goal_std_uncertainty
         self.home_goal_diff_advantage = home_goal_diff_advantage
         self.min_expected_results = min_expected_results
         self.no_history_penalty = no_history_penalty
         self.results_weighting = results_weighting
         self.diff_goal_aggregation_multiplier = diff_goal_aggregation_multiplier
+        self.nb_max_results = nb_max_results
+        self.max_days = max_days
 
     def get_parameters(self, date, results_list):
         raise NotImplementedError('not implemented, please use get_match_parameters')
 
-    def get_match_parameters(self, match, iterable_results, nb_max_results=None, max_days=None):
+    def get_match_parameters(self, match, iterable_results):
         home_team_results, away_team_results, match_result = get_relative_results_history(match, iterable_results,
-                                                                                          nb_max_results, max_days)
+                                                                                          self.nb_max_results,
+                                                                                          self.max_days)
         teams = match.home_team, match.away_team
         all_past_results = home_team_results, away_team_results
         estimated_diffs = [0., 0.]

@@ -5,17 +5,16 @@ from bets_project.investmentstrategy import GenericGainInvestStrategy, DummyHome
     DummyAwayInvestStrategy, DummyDrawInvestStrategy
 from bets_project.matchoutcomesanalyser import DiffGoalAnalyser
 from bets_project.matchoutcomesmodel import DiffGoalNormalDistrib, GoalsPoissonDistrib
-from bets_project.backtesting import backtest
+from bets_project.backtesting import backtest_strategy
 from bets_project.maths import LinearWeight, ExponentialWeight
 from bets_project.bookmakersquotes import proba_to_quote, quote_to_proba, get_best_quote
 from bets_project.modelparamestimation import PoissonLikelihoodParamEstimation
-# from bets_project.ma
 
 from math import sqrt
 import datetime, time
 
-# DATA_DIR = "/Users/cracr/Desktop/python_projects/Bets/src/bets_project/data/"
-DATA_DIR = "/home/rpil/Desktop/perso/Bets/src/bets_project/data/"
+DATA_DIR = "/Users/cracr/Desktop/python_projects/Bets/src/bets_project/data/"
+# DATA_DIR = "/home/rpil/Desktop/perso/Bets/src/bets_project/data/"
 
 def validate_objects_consistency():
     manager = ObjectsManager()
@@ -165,6 +164,52 @@ def test_strategy():
     # backtest(manager, d_start, d_end, match_outcome_analyser, investment_strategy, favorite_bookmaker=Bookmaker('BbAv'))
 
 
+def test_back_testing_strategy():
+    manager = ObjectsManager()
+    ligue_1 = manager.register_ligue_1()
+    manager.register_odds_structure()
+
+    s_labels_to_load = ('2009-2010', '2010-2011', '2011-2012', '2012-2013', '2013-2014', '2014-2015', '2015-2016')
+    all_compet_season = [CompetitionSeason(s, ligue_1) for s in s_labels_to_load]
+    for compet_season in all_compet_season:
+        competition_label = compet_season.competition.name.lower().replace(' ', '').replace('_', '')
+        season_label = compet_season.season.replace('/', '_').replace('-', '_')
+        file = DATA_DIR + competition_label + '_' + season_label + '.csv'
+        manager.register_full_season_matches_from_csv(compet_season, file)
+
+    d_start = datetime.datetime.strptime("06-08-2015", '%d-%m-%Y').date()
+    d_end = datetime.datetime.strptime("18-08-2016", '%d-%m-%Y').date()
+
+
+    # configure param estimator
+    nb_observed_matches = 38 * 3
+    default_scored_goals = 0.85
+    default_conceded_goals = 1.15
+    results_weighting = ExponentialWeight(0.65)
+    # results_weighting = LinearWeight(365 * 3.)
+    max_days_in_past = 365.25 * 3 + 10
+    poisson_param_estimator = PoissonLikelihoodParamEstimation(nb_observed_matches, default_scored_goals,
+                                                               default_conceded_goals, results_weighting,
+                                                               max_days=max_days_in_past)
+
+    # configure outcomes model
+    outcomes_model = GoalsPoissonDistrib()
+    # outcomes_model = DiffGoalNormalDistrib()
+
+    # configure investment_strategy
+    investment_gain_threshold = 0.05
+    investment_strategy = GenericGainInvestStrategy(investment_gain_threshold, sqrt)
+    # investment_strategy = DummyDrawInvestStrategy()
+
+    bet_recap = backtest_strategy(manager, d_start, d_end, poisson_param_estimator, outcomes_model, investment_strategy,
+                                favorite_bookmaker=Bookmaker('BbAv'))
+
+    for bet in bet_recap:
+        print('----')
+        print(bet['result'])
+        print([round(p, 3) for p in quote_to_proba(bet['booky_quote'])], [round(p, 3) for p in bet['estimated_probas']])
+
+
 def test_poisson_param_likelihood_estimation():
     manager = ObjectsManager()
     ligue_1 = manager.register_ligue_1()
@@ -205,7 +250,8 @@ def main():
     validate_poisson_goals_model()
 
     # test_strategy()
-    test_poisson_param_likelihood_estimation()
+    test_back_testing_strategy()
+    # test_poisson_param_likelihood_estimation()
 
     tps2 = time.clock()
 
