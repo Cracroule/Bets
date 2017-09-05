@@ -1,7 +1,7 @@
-from bets_project.maths import cumulative_normal_distribution, solver, poisson_proba_table, poisson_probability
+from bets_project.miscellaneous.maths import cumulative_normal_distribution, solver, poisson_proba_table
 
 
-class MatchOutcomesModel(object):
+class ModelMatchOutcomes(object):
 
     def __init__(self):
         raise NotImplementedError('attempt to instantiate abstract class MatchOutcomeModel')
@@ -15,7 +15,7 @@ class MatchOutcomesModel(object):
 # And assumes that the expected goal difference of input match follow a normal distribution"""
 #
 
-class DiffGoalNormalDistrib(MatchOutcomesModel):
+class DiffGoalNormalDistrib(ModelMatchOutcomes):
 
     def __init__(self):
         pass
@@ -57,7 +57,7 @@ class DiffGoalNormalDistrib(MatchOutcomesModel):
         return final_e_diff, final_sigma
 
 
-class GoalsPoissonDistrib(MatchOutcomesModel):
+class GoalsPoissonDistrib(ModelMatchOutcomes):
 
     default_min_lambda = 0.05
     default_max_lambda = 8.

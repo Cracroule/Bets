@@ -1,13 +1,5 @@
-from bets_project.objects import Sport, Competition, CompetitionSeason, EventOdds, Event, \
-    Team, Match, MatchResult, Bookmaker, BetObject
-from math import sqrt
-from bets_project.maths import cumulative_normal_distribution, ExponentialWeight, LinearWeight
-from bets_project.matchoutcomesanalyser import DiffGoalAnalyser
-from bets_project.investmentstrategy import DummyAwayInvestStrategy, DummyDrawInvestStrategy, DummyHomeInvestStrategy, \
-    GenericGainInvestStrategy
-from bets_project.bookmakersquotes import get_best_quote, proba_to_quote, quote_to_proba
-from bets_project.matchoutcomesmodel import GoalsPoissonDistrib, DiffGoalNormalDistrib
-from bets_project.resultsanalysis import BasicGenericAnalysis
+from bets_project.objects.bookmakersquotes import get_best_quote
+from bets_project.objects.objects import EventOdds, Match, MatchResult
 
 
 # # TODO delete here (has been copied in ModelParamEstimation)

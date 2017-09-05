@@ -1,4 +1,4 @@
-from bets_project.objects import Sport, Competition, CompetitionSeason, EventOdds, Event, \
+from bets_project.objects.objects import Sport, Competition, CompetitionSeason, EventOdds, Event, \
     Team, Match, MatchResult, Bookmaker, BetObject
 import inspect
 import datetime

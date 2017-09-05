@@ -18,7 +18,7 @@ def cumulative_normal_distribution(x):
 def poisson_probability(k_events, lambda_param):
     k_fact = 1.
     for i in range(k_events):
-      k_fact *= i + 1.
+        k_fact *= i + 1.
     return lambda_param**k_events * exp(- lambda_param) / k_fact
 
 
@@ -55,29 +55,35 @@ def time_series_stats(time_series):
     return avg, sigma
 
 
-class ExponentialWeight(object):
-
-    def __init__(self, discount_rate, day_count_base=None):
-        self.param = discount_rate
-        if day_count_base:
-            self.day_count_base = day_count_base
-        else:
-            self.day_count_base = 365.
-
-    def weight(self, t2, t1):
-        time_diff = t2 - t1
-        if time_diff.days < 0:
-            raise Exception("'weight' should be called with a positive time difference (match results in the past!)")
-        return exp(- self.param * time_diff.days / self.day_count_base)
-
-
-class LinearWeight(object):
-
-    def __init__(self, horizon):
-        self.param = horizon
-
-    def weight(self, t2, t1):
-        time_diff = t2 - t1
-        if time_diff.days < 0:
-            raise Exception("'weight' should be called with a positive time difference (match results in the past!)")
-        return max(1. - time_diff.days / self.param, 0.)
+# class ResultsWeighting(object):
+#
+#     def __init__(self):
+#         raise NotImplementedError('attempt to instantiate abstract class ResultsWeighting')
+#
+#     def weight(self, t2, t1):
+#         raise NotImplementedError()
+#
+#
+# class ExponentialWeight(ResultsWeighting):
+#
+#     def __init__(self, discount_rate, day_count_base=365.):
+#         self.param = discount_rate
+#         self.day_count_base = day_count_base
+#
+#     def weight(self, t2, t1):
+#         time_diff = t2 - t1
+#         if time_diff.days < 0:
+#             raise Exception("'weight' should be called with a positive time difference (match results in the past!)")
+#         return exp(- self.param * time_diff.days / self.day_count_base)
+#
+#
+# class LinearWeight(ResultsWeighting):
+#
+#     def __init__(self, horizon):
+#         self.param = horizon
+#
+#     def weight(self, t2, t1):
+#         time_diff = t2 - t1
+#         if time_diff.days < 0:
+#             raise Exception("'weight' should be called with a positive time difference (match results in the past!)")
+#         return max(1. - time_diff.days / self.param, 0.)

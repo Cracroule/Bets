@@ -1,4 +1,3 @@
-from bets_project.objects import Match
 from math import log
 import copy
 
@@ -51,7 +50,7 @@ class ModelParamEstimation(object):
 class PoissonLikelihoodParamEstimation(ModelParamEstimation):
 
     def __init__(self, nb_observed_matches, default_scored_goals, default_conceded_goals, results_weighting,
-                 nb_days_validity_parameters=4, max_days=None, convergence_ratio=0.6, max_likelihood_iterations=1000,
+                 nb_days_validity_parameters=4, max_days=None, convergence_ratio=0.7, max_likelihood_iterations=1000,
                  epsilon=0.000001):
         self.nb_observed_matches = nb_observed_matches
         self.default_scored_goals = default_scored_goals
@@ -96,6 +95,16 @@ class PoissonLikelihoodParamEstimation(ModelParamEstimation):
         mu_param = alpha_away * beta_home
 
         return lambda_param, mu_param
+
+    def print_all_params(self):
+        cache = list(self.cache)
+        cache.sort(key=lambda x: x)
+        for date, team_params, home_adv in cache:
+            print('----------------')
+            print(date)
+            print("home adv:", home_adv['gamma'])
+            for t in team_params.keys():
+                print(t.name, round(team_params[t]['alpha'], 6), round(team_params[t]['beta'], 6))
 
     def _compute_params(self, date, results_list):
         results_by_team, all_observed_results = self._prepare_results(date, results_list)
