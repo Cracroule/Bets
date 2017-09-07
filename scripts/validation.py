@@ -10,7 +10,7 @@ from bets_project.objects.bookmakersquotes import proba_to_quote, quote_to_proba
 from bets_project.objects.objects import Sport, Competition, CompetitionSeason, Event, \
     Team, Match, MatchResult, Bookmaker
 from bets_project.objects.objectsmanager import ObjectsManager
-from bets_project.objects.resultsweighting import ExponentialWeight
+from bets_project.objects.resultsweighting import ExponentialWeight, LinearWeight
 
 # DATA_DIR = "/Users/cracr/Desktop/python_projects/Bets/src/bets_project/data/"
 DATA_DIR = "/home/rpil/Desktop/perso/Bets/src/bets_project/data/"
@@ -126,44 +126,6 @@ def validate_poisson_goals_model():
     assert (all([abs(outcomes_probas[i] - p_bis_bis[i]) < epsilon_validation for i in range(3)]))
 
 
-# def test_strategy():
-#     manager = ObjectsManager()
-#     ligue_1 = manager.register_ligue_1()
-#     manager.register_odds_structure()
-#
-#     s_labels_to_load = ('2009-2010', '2010-2011', '2011-2012', '2012-2013', '2013-2014', '2014-2015', '2015-2016')
-#     all_compet_season = [CompetitionSeason(s, ligue_1) for s in s_labels_to_load]
-#     for compet_season in all_compet_season:
-#         competition_label = compet_season.competition.name.lower().replace(' ', '').replace('_', '')
-#         season_label = compet_season.season.replace('/', '_').replace('-', '_')
-#         file = DATA_DIR + competition_label + '_' + season_label + '.csv'
-#         manager.register_full_season_matches_from_csv(compet_season, file)
-#
-#     # let s focus on 1rst game of ligue1
-#     d_start = datetime.datetime.strptime("06-08-2013", '%d-%m-%Y').date()
-#     d_end = datetime.datetime.strptime("18-06-2014", '%d-%m-%Y').date()
-#
-#     sigma = 1.2
-#     home_goal_diff_advantage = 0.25
-#     min_expected_results = 38
-#     no_history_penalty = -0.5
-#     diff_goal_aggregation_multiplier = 0.7
-#     results_weighting = LinearWeight(365 * 2.)
-#     outcomes_model = DiffGoalNormalDistrib()
-#     match_outcome_analyser = DiffGoalAnalyser(sigma, home_goal_diff_advantage, min_expected_results, no_history_penalty,
-#                                               diff_goal_aggregation_multiplier,results_weighting, outcomes_model)
-#
-#     # investment_strategy = DummyDrawInvestStrategy()
-#     investment_gain_threshold = 0.05
-#     fct_of_gain = sqrt
-#     investment_strategy = GenericGainInvestStrategy(investment_gain_threshold, fct_of_gain)
-#     # backtest(manager, d_start, d_end, match_outcome_analyser, investment_strategy, observed_team_name="Paris SG")
-#     # backtest(manager, d_start, d_end, match_outcome_analyser, investment_strategy, favorite_bookmaker=Bookmaker('BbAv'),
-#     #          observed_team="Paris SG")
-#     backtest(manager, d_start, d_end, match_outcome_analyser, investment_strategy)
-#     # backtest(manager, d_start, d_end, match_outcome_analyser, investment_strategy, favorite_bookmaker=Bookmaker('BbAv'))
-
-
 def test_back_testing_strategy():
     manager = ObjectsManager()
     ligue_1 = manager.register_ligue_1()
@@ -187,14 +149,14 @@ def test_back_testing_strategy():
     # d_start = datetime.datetime.strptime("06-08-2015", '%d-%m-%Y').date()
     # d_end = datetime.datetime.strptime("18-08-2016", '%d-%m-%Y').date()
 
-    d_start = datetime.datetime.strptime("06-08-2016", '%d-%m-%Y').date()
+    d_start = datetime.datetime.strptime("06-08-2014", '%d-%m-%Y').date()
     d_end = datetime.datetime.strptime("18-08-2017", '%d-%m-%Y').date()
 
 
     # configure param estimator
     nb_observed_matches = 38 * 3
     default_scored_goals = 0.9
-    default_conceded_goals = 1.10
+    default_conceded_goals = 1.15
     results_weighting = ExponentialWeight(0.4)
     # results_weighting = LinearWeight(365 * 3.)
     max_days_in_past = 365.25 * 3 + 10
@@ -214,15 +176,19 @@ def test_back_testing_strategy():
     # bet_recap = backtest_strategy(manager, d_start, d_end, poisson_param_estimator, outcomes_model, investment_strategy,
     #                               favorite_bookmaker=Bookmaker('BbAv'))
     bet_recap = backtest_strategy(manager, d_start, d_end, poisson_param_estimator, outcomes_model, investment_strategy)
+    # bet_recap = backtest_strategy(manager, d_start, d_end, poisson_param_estimator, outcomes_model, investment_strategy,
+    #                               observed_team=Team("Paris SG"))
 
-    prob_square_diff = 0.
-    for bet in bet_recap:
-        booky_probas = quote_to_proba(bet['booky_quote'])
-        print('----')
-        print(bet['result'])
-        print([round(p, 3) for p in booky_probas], [round(p, 3) for p in bet['estimated_probas']])
-        prob_square_diff += sum([(booky_probas[i] - bet['estimated_probas'][i]) ** 2 for i in range(3)])
-    print(prob_square_diff)
+    # prob_square_diff = 0.
+    # normal_model = DiffGoalNormalDistrib()
+    # for bet in bet_recap:
+    #     booky_probas = quote_to_proba(bet['booky_quote'])
+    #     # print('----')
+    #     # print(bet['result'])
+    #     # print([round(p, 3) for p in booky_probas], [round(p, 3) for p in bet['estimated_probas']])
+    #     prob_square_diff += sum([(booky_probas[i] - bet['estimated_probas'][i]) ** 2 for i in range(3)])
+    #     print([round(abs(e), 4) for e in normal_model.implied_param_from_proba(booky_probas)])
+    # print(prob_square_diff)
 
     # poisson_param_estimator.print_all_params()
 

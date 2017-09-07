@@ -1,5 +1,6 @@
-from bets_project.objects.bookmakersquotes import get_best_quote
+from bets_project.objects.bookmakersquotes import get_best_quote, quote_to_proba
 from bets_project.objects.objects import EventOdds, Match, MatchResult
+from math import log
 
 
 # # TODO delete here (has been copied in ModelParamEstimation)
@@ -114,6 +115,9 @@ def backtest_strategy(manager, d_start, d_end, param_estimator, model_match_outc
     total_gain = 0.
     total_bet_amount = 0.
     recap_bet_results = list()
+    plikelihood_model, plikelihood_booky = 0., 0.
+    nb_backtested_matches = 0
+    distance_to_booky = 0.
     for match in all_matches_within_bet_range:
         if observed_team and match.home_team != observed_team and match.away_team != observed_team:
             continue
@@ -124,7 +128,7 @@ def backtest_strategy(manager, d_start, d_end, param_estimator, model_match_outc
         prob_match_issues = model_match_outcomes.distrib_from_poisson_param(*match_params)
         bet_amounts = investment_strategy.get_investment_amounts(prob_match_issues, best_booky_quotes)
 
-        # booky_probas = quote_to_proba(best_booky_quotes)
+        booky_probas = quote_to_proba(best_booky_quotes)
         # norm_param = DiffGoalNormalDistrib.implied_param_from_proba(booky_probas)
         # poisson_param = GoalsPoissonDistrib.implied_param_from_proba(booky_probas)
 
@@ -134,16 +138,24 @@ def backtest_strategy(manager, d_start, d_end, param_estimator, model_match_outc
         victory_boolean = [diff > 0, diff == 0, diff < 0]
         for i in range(3):
             match_gain += bet_amounts[i] * best_booky_quotes[i] * victory_boolean[i]
+            distance_to_booky += (booky_probas[i] - prob_match_issues[i]) ** 2.
+            plikelihood_model += victory_boolean[i] * log(prob_match_issues[i])
+            plikelihood_booky += victory_boolean[i] * log(booky_probas[i])
 
         total_gain += match_gain
         total_bet_amount += sum(bet_amounts)
+        nb_backtested_matches += 1
 
         recap_bet_results.append({"result": match_result, "booky_quote": best_booky_quotes,
                                   "estimated_probas": prob_match_issues, "match_gain": match_gain})
 
-    print("total gain:", total_gain)
-    print("total bet amount:", total_bet_amount)
-    print("ratio:", round(total_gain / total_bet_amount, 4))
+    # plikelihood_model /= nb_backtested_matches
+    # plikelihood_booky /= nb_backtested_matches
+
+    print("total gain:", round(total_gain, 4), "  total bet amount:", round(total_bet_amount, 4),
+          "   ratio:", round(total_gain / total_bet_amount, 4))
+    print("distance_to_booky:", round(distance_to_booky, 4))
+    print("plikelihood_model:", round(plikelihood_model, 4), "  plikelihood_booky:", round(plikelihood_booky, 4))
     return recap_bet_results
 
 
