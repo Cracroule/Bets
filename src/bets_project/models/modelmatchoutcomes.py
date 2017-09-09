@@ -9,11 +9,6 @@ class ModelMatchOutcomes(object):
     def outcomes_probabilities(self, **kwargs):
         raise NotImplementedError()
 
-#
-# """ look in past of each team in order to asset probability of issues W/D/A
-# This example of implementation assesses a typical goal difference for each team
-# And assumes that the expected goal difference of input match follow a normal distribution"""
-#
 
 class DiffGoalNormalDistrib(ModelMatchOutcomes):
 
@@ -65,11 +60,9 @@ class GoalsPoissonDistrib(ModelMatchOutcomes):
 
     def __init__(self):
         pass
-        # self.default_min_lambda = 0.05
-        # self.default_max_lambda = 8.
 
     @staticmethod
-    def distrib_from_poisson_param(lambda_param_1, lambda_param_2, k_max=20):
+    def outcomes_probabilities(lambda_param_1, lambda_param_2, k_max=20):
         table_1 = poisson_proba_table(lambda_param_1, k_max)
         table_2 = poisson_proba_table(lambda_param_2, k_max)
 
@@ -90,20 +83,20 @@ class GoalsPoissonDistrib(ModelMatchOutcomes):
         p1, p2, p3 = target_probabilities
 
         def g(lambda_param_1):
-            f = lambda x: GoalsPoissonDistrib.distrib_from_poisson_param(lambda_param_1, x)[0] - p1
+            f = lambda x: GoalsPoissonDistrib.outcomes_probabilities(lambda_param_1, x)[0] - p1
             lambda_param_2 = solver(f, absolute_min_lambda, absolute_max_lambda, precision)
-            return GoalsPoissonDistrib.distrib_from_poisson_param(lambda_param_1, lambda_param_2)[1] - p2
+            return GoalsPoissonDistrib.outcomes_probabilities(lambda_param_1, lambda_param_2)[1] - p2
 
         # print " \lambda_1_min", lambda_1_min, "     lambda_1_max", lambda_1_max
         lambda_param_1 = solver(g, lambda_1_min, lambda_1_max, precision)
-        lambda_param_2 = solver(lambda x: GoalsPoissonDistrib.distrib_from_poisson_param(lambda_param_1, x)[0] - p1,
+        lambda_param_2 = solver(lambda x: GoalsPoissonDistrib.outcomes_probabilities(lambda_param_1, x)[0] - p1,
                                 absolute_min_lambda, absolute_max_lambda, precision)
         return lambda_param_1, lambda_param_2
 
     # TODO raise specific exception
     @staticmethod
     def implied_param_from_proba(target_probabilities, nb_max_iterations=20, precision=0.000001,
-                                              absolute_min_lambda=0.05, absolute_max_lambda=8.):
+                                 absolute_min_lambda=0.05, absolute_max_lambda=8.):
         lambda_total_possible_range = absolute_max_lambda - absolute_min_lambda
         lambda_sub_range = lambda_total_possible_range / nb_max_iterations
         for i in range(nb_max_iterations):

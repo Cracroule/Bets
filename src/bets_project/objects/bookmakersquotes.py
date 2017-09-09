@@ -1,4 +1,4 @@
-from bets_project.objects.objects import EventOdds, Event, Team, Match, Bookmaker
+from bets_project.objects.objects import Event
 
 
 def get_best_quote(match, quotes_list):

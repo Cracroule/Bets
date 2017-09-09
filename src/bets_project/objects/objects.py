@@ -1,6 +1,3 @@
-# from datetime import datetime
-
-
 class BetObject(object):
 
     def __ne__(self, other):

@@ -1,5 +1,4 @@
 from math import sqrt, log, exp, pi
-import datetime
 
 SOLVER_DEBUG_MODE = False
 
